@@ -22,7 +22,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS) || 10;
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://frontend-one-eta-56.vercel.app/', // allow frontend to access backend
+  credentials: true
+}));
+
 app.use(bodyParser.json());
 
 let Billing; // 🟡 Declare Billing model globally
