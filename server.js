@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 5000;
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS) || 10;
 
 app.use(cors({
-  origin: 'https://frontend-one-eta-56.vercel.app/', // allow frontend to access backend
+  origin: 'https://frontend-one-eta-56.vercel.app', // allow frontend to access backend
   credentials: true
 }));
 
@@ -104,19 +104,30 @@ app.post('/signup', async (req, res) => {
 // Login Route
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  console.log("🛂 Login attempt:", email); // Debug
 
   try {
     const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.warn("❌ No user found with email:", email);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.warn("❌ Invalid password for email:", email);
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    console.log("✅ Login successful for:", email);
     res.status(200).json({ message: 'Login successful' });
+
   } catch (err) {
     console.error('❌ Login error:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 // Product Routes
 app.use('/products', productRoutes);
