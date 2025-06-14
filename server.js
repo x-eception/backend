@@ -8,7 +8,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
-const moment = require('moment-timezone'); // ✅ Added
+const moment = require('moment-timezone');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const path = require('path');
@@ -57,10 +57,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ✅ Cron - Stock Alert Email at 14:30 IST daily
-cron.schedule('30 14 * * *', {
-  timezone: "Asia/Kolkata"
-}, () => {
+// ✅ FIXED: Cron - Stock Alert Email at 14:30 IST daily
+cron.schedule('30 14 * * *', () => {
   console.log('⏰ Running daily 2:30 PM IST stock check...');
   const query = 'SELECT * FROM shop_details WHERE stock <= 3';
 
@@ -83,6 +81,8 @@ cron.schedule('30 14 * * *', {
       console.error('❌ Email sending error:', mailErr);
     }
   });
+}, {
+  timezone: 'Asia/Kolkata'
 });
 
 // Signup Route
