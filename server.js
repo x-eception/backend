@@ -57,7 +57,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Cron - Stock Alert Email
-cron.schedule('0 13 * * *', () => {
+cron.schedule('0 14 * * *', () => {
   console.log('⏰ Running daily 1 PM stock check...');
   const query = 'SELECT * FROM shop_details WHERE stock <= 3';
 
