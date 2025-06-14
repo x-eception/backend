@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
+const moment = require('moment-timezone'); // ✅ Added
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const path = require('path');
@@ -23,13 +24,13 @@ const PORT = process.env.PORT || 5000;
 const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS) || 10;
 
 app.use(cors({
-  origin: 'https://frontend-one-eta-56.vercel.app', // allow frontend to access backend
+  origin: 'https://frontend-one-eta-56.vercel.app',
   credentials: true
 }));
 
 app.use(bodyParser.json());
 
-let Billing; // 🟡 Declare Billing model globally
+let Billing;
 
 // MongoDB (Users) connection
 mongoose.connect(process.env.MONGO_URI + 'users')
@@ -56,9 +57,11 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Cron - Stock Alert Email
-cron.schedule('0 14 * * *', () => {
-  console.log('⏰ Running daily 1 PM stock check...');
+// ✅ Cron - Stock Alert Email at 14:30 IST daily
+cron.schedule('30 14 * * *', {
+  timezone: "Asia/Kolkata"
+}, () => {
+  console.log('⏰ Running daily 2:30 PM IST stock check...');
   const query = 'SELECT * FROM shop_details WHERE stock <= 3';
 
   db.query(query, async (err, results) => {
@@ -75,7 +78,7 @@ cron.schedule('0 14 * * *', () => {
 
     try {
       await transporter.sendMail(mailOptions);
-      console.log('📧 Stock alert email sent at 1 PM.');
+      console.log('📧 Stock alert email sent at 2:30 PM IST.');
     } catch (mailErr) {
       console.error('❌ Email sending error:', mailErr);
     }
@@ -104,7 +107,7 @@ app.post('/signup', async (req, res) => {
 // Login Route
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  console.log("🛂 Login attempt:", email); // Debug
+  console.log("🛂 Login attempt:", email);
 
   try {
     const user = await User.findOne({ email });
@@ -127,7 +130,6 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 
 // Product Routes
 app.use('/products', productRoutes);
@@ -162,7 +164,6 @@ app.post('/billing', async (req, res) => {
       };
     });
 
-    // Update stock
     for (const item of billedItems) {
       await mysqlConn.query(
         'UPDATE shop_details SET stock = stock - ? WHERE id = ?',
@@ -170,10 +171,8 @@ app.post('/billing', async (req, res) => {
       );
     }
 
-    // Save to Billing DB
     const bill = await Billing.create({ items: billedItems, total });
 
-    // Generate PDF
     const doc = new PDFDocument();
     const fileName = `bill_${bill._id}.pdf`;
     const filePath = path.join(__dirname, 'bills', fileName);
@@ -195,7 +194,6 @@ app.post('/billing', async (req, res) => {
     writeStream.on('finish', async () => {
       const downloadUrl = `/bills/${fileName}`;
 
-      // Optional Email
       if (email) {
         try {
           await transporter.sendMail({
